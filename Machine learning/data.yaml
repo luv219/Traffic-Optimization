@@ -1,0 +1,14 @@
+# File: C:\Users\Pratyush\Documents\GitHub\Traffic-Optimization\Machine learning\data.yaml
+
+path: C:/Users/Pratyush/Documents/GitHub/Traffic-Optimization/Machine learning/DataSet
+train: images/train
+val: images/val
+
+names:
+  0: car
+  1: bus
+  2: truck
+  3: motorcycle
+  4: bicycle
+  5: train
+  6: airplane
