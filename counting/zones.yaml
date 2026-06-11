@@ -1,0 +1,15 @@
+zones:
+  - name: "left_lane"
+    color: [255, 0, 0]  # Blue (BGR format)
+    polygon:
+      - [50, 180]
+      - [370, 180]
+      - [250, 420]
+      - [0, 420]
+  - name: "right_lane"
+    color: [0, 255, 0]  # Green (BGR format)
+    polygon:
+      - [380, 180]
+      - [700, 180]
+      - [768, 420]
+      - [450, 420]

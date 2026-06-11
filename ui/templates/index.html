@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Adaptive Traffic Optimization Dashboard</title>
+    <meta name="description" content="Real-time traffic optimization dashboard displaying YOLO vehicle detection, zone tracking, and adaptive traffic control signal simulator.">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            --panel-bg: rgba(30, 41, 59, 0.45);
+            --panel-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-yellow: #f59e0b;
+            --accent-red: #ef4444;
+            --accent-purple: #8b5cf6;
+            --font-family: 'Outfit', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding: 20px;
+        }
+
+        /* Glassmorphism utility */
+        .glass-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--panel-border);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .glass-panel:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 12px 40px 0 rgba(59, 130, 246, 0.1);
+        }
+
+        /* Layout */
+        .dashboard-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            margin-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #60a5fa 0%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .system-status {
+            display: flex;
+            gap: 15px;
+            font-size: 0.9rem;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            box-shadow: 0 0 10px var(--accent-green);
+        }
+
+        .grid-main {
+            display: grid;
+            grid-template-columns: 3fr 2fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 1200px) {
+            .grid-main {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .column-left, .column-right {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Cards and Sections */
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #93c5fd;
+        }
+
+        /* Video Player panel */
+        .video-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #020617;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .video-feed {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .video-placeholder {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: var(--text-secondary);
+            gap: 10px;
+        }
+
+        /* 2D Intersection Simulator Visualizer */
+        .intersection-svg-container {
+            width: 100%;
+            aspect-ratio: 1/1;
+            max-width: 480px;
+            margin: 0 auto;
+            background: #0f172a;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 10px;
+        }
+
+        .intersection-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 20px;
+            align-items: center;
+        }
+
+        @media (max-width: 768px) {
+            .intersection-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Control Panel styles */
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .control-label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .btn-group {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        button {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-family: var(--font-family);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        button.active {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+        }
+
+        /* Sliders */
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 8px var(--accent-blue);
+        }
+
+        /* Stats grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .stat-value {
+            font-size: 1.6rem;
+            font-weight: 700;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Charts panel */
+        .charts-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .chart-box {
+            position: relative;
+            height: 220px;
+            width: 100%;
+        }
+
+        /* Comparison panel */
+        .compare-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .compare-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .compare-card.winner {
+            border-color: var(--accent-green);
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .winner-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--accent-green);
+            color: #0f172a;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-bottom-left-radius: 6px;
+            text-transform: uppercase;
+        }
+
+        .compare-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .compare-val {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .compare-sub {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-container">
+        
+        <header>
+            <h1><i data-lucide="cpu"></i> Smart traffic optimization Dashboard</h1>
+            <div class="system-status">
+                <div class="status-badge">
+                    <span class="status-dot"></span>
+                    <span>System Online</span>
+                </div>
+                <div class="status-badge" id="active-algo-badge">
+                    <i data-lucide="traffic-cone" style="width: 14px; height: 14px; color: var(--accent-blue);"></i>
+                    <span>Fixed-Time</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="grid-main">
+            
+            <!-- LEFT COLUMN: Live Feed, Simulator Visualization -->
+            <div class="column-left">
+                
+                <!-- Live YOLO Video Analytics -->
+                <div class="glass-panel">
+                    <div class="section-title">
+                        <i data-lucide="video" style="color: var(--accent-blue);"></i>
+                        <span>YOLOv11 Real-Time Vehicle Tracking & Counting</span>
+                    </div>
+                    <div class="video-container">
+                        <img id="video-stream" src="/video_feed" class="video-feed" alt="YOLOv11 Video Tracking Feed">
+                        <!-- Fallback placeholder if stream fails -->
+                        <div id="video-fallback" class="video-placeholder" style="display: none;">
+                            <i data-lucide="video-off" style="width: 48px; height: 48px;"></i>
+                            <span>Waiting for video stream...</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-grid" style="margin-top: 15px;">
+                        <div class="stat-card" style="border-left: 4px solid var(--accent-blue);">
+                            <span class="stat-label">YOLO Left Lane Vehicles</span>
+                            <span class="stat-value" id="yolo-left-val">0</span>
+                        </div>
+                        <div class="stat-card" style="border-left: 4px solid var(--accent-green);">
+                            <span class="stat-label">YOLO Right Lane Vehicles</span>
+                            <span class="stat-value" id="yolo-right-val">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2D Intersection Map & Simulator Data -->
+                <div class="glass-panel">
+                    <div class="section-title">
+                        <i data-lucide="activity" style="color: var(--accent-purple);"></i>
+                        <span>2D Intersection Visualizer & Simulation Model</span>
+                    </div>
+                    
+                    <div class="intersection-grid">
+                        <!-- 2D Interactive SVG Visualizer -->
+                        <div class="intersection-svg-container">
+                            <svg viewBox="0 0 400 400" width="100%" height="100%">
+                                <!-- Road Background -->
+                                <rect x="0" y="0" width="400" height="400" fill="#0f172a" />
+                                
+                                <!-- Roads -->
+                                <rect x="150" y="0" width="100" height="400" fill="#334155" />
+                                <rect x="0" y="150" width="400" height="100" fill="#334155" />
+                                
+                                <!-- Lane Dividers -->
+                                <line x1="200" y1="0" x2="200" y2="400" stroke="#f1f5f9" stroke-width="2" stroke-dasharray="6,6" />
+                                <line x1="0" y1="200" x2="400" y2="200" stroke="#f1f5f9" stroke-width="2" stroke-dasharray="6,6" />
+                                
+                                <!-- Inner Crossroad -->
+                                <rect x="150" y="150" width="100" height="100" fill="#1e293b" />
+                                
+                                <!-- Pedestrian crossings -->
+                                <rect x="150" y="140" width="100" height="10" fill="#cbd5e1" fill-opacity="0.3" />
+                                <rect x="150" y="250" width="100" height="10" fill="#cbd5e1" fill-opacity="0.3" />
+                                <rect x="140" y="150" width="10" height="100" fill="#cbd5e1" fill-opacity="0.3" />
+                                <rect x="250" y="150" width="10" height="100" fill="#cbd5e1" fill-opacity="0.3" />
+
+                                <!-- Traffic Lights Visualizer -->
+                                <!-- North Light -->
+                                <circle id="light-N" cx="130" cy="130" r="10" fill="red" />
+                                <text x="126" y="115" fill="#94a3b8" font-size="10" font-family="Outfit" font-weight="bold">N</text>
+                                
+                                <!-- South Light -->
+                                <circle id="light-S" cx="270" cy="270" r="10" fill="red" />
+                                <text x="266" y="295" fill="#94a3b8" font-size="10" font-family="Outfit" font-weight="bold">S</text>
+                                
+                                <!-- East Light -->
+                                <circle id="light-E" cx="270" cy="130" r="10" fill="red" />
+                                <text x="285" y="134" fill="#94a3b8" font-size="10" font-family="Outfit" font-weight="bold">E</text>
+                                
+                                <!-- West Light -->
+                                <circle id="light-W" cx="130" cy="270" r="10" fill="red" />
+                                <text x="105" y="274" fill="#94a3b8" font-size="10" font-family="Outfit" font-weight="bold">W</text>
+
+                                <!-- Queue Counts Text Elements in Lanes -->
+                                <text x="175" y="80" id="svg-q-N" fill="#f8fafc" font-size="16" font-family="Outfit" font-weight="bold" text-anchor="middle">Q: 0</text>
+                                <text x="225" y="330" id="svg-q-S" fill="#f8fafc" font-size="16" font-family="Outfit" font-weight="bold" text-anchor="middle">Q: 0</text>
+                                <text x="80" y="230" id="svg-q-W" fill="#f8fafc" font-size="16" font-family="Outfit" font-weight="bold" text-anchor="middle">Q: 0</text>
+                                <text x="320" y="180" id="svg-q-E" fill="#f8fafc" font-size="16" font-family="Outfit" font-weight="bold" text-anchor="middle">Q: 0</text>
+                            </svg>
+                        </div>
+                        
+                        <!-- Simulation Metrics -->
+                        <div class="stats-grid">
+                            <div class="stat-card" style="border-left: 4px solid var(--accent-blue);">
+                                <span class="stat-label">Elapsed Time</span>
+                                <span class="stat-value" id="sim-time-val">0s</span>
+                            </div>
+                            <div class="stat-card" style="border-left: 4px solid var(--accent-purple);">
+                                <span class="stat-label">Throughput</span>
+                                <span class="stat-value" id="sim-throughput-val">0</span>
+                            </div>
+                            <div class="stat-card" style="border-left: 4px solid var(--accent-red);">
+                                <span class="stat-label">Total Delay</span>
+                                <span class="stat-value" id="sim-delay-val">0</span>
+                            </div>
+                            <div class="stat-card" style="border-left: 4px solid var(--accent-yellow);">
+                                <span class="stat-label">Avg delay</span>
+                                <span class="stat-value" id="sim-avg-delay-val">0s</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN: Controls, Live Charts, Algo Evaluation -->
+            <div class="column-right">
+                
+                <!-- Interactive Controls -->
+                <div class="glass-panel">
+                    <div class="section-title">
+                        <i data-lucide="sliders" style="color: var(--accent-yellow);"></i>
+                        <span>Signal Optimization & Config Control</span>
+                    </div>
+                    
+                    <!-- Algorithm Selector -->
+                    <div class="control-group">
+                        <span class="control-label">Control Algorithm</span>
+                        <div class="btn-group">
+                            <button id="btn-fixed" class="active" onclick="setAlgorithm('Fixed-Time')">Fixed-Time</button>
+                            <button id="btn-actuated" onclick="setAlgorithm('Actuated')">Actuated</button>
+                            <button id="btn-adaptive" onclick="setAlgorithm('Adaptive')">Adaptive AI</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Arrival Rates Sliders -->
+                    <div class="control-group">
+                        <span class="control-label">
+                            <span>NS Lane Arrival Rate</span>
+                            <span id="rate-ns-label">0.15 v/s</span>
+                        </span>
+                        <input type="range" id="slider-rate-ns" min="0.05" max="0.5" step="0.05" value="0.15" oninput="updateRates()">
+                    </div>
+                    <div class="control-group">
+                        <span class="control-label">
+                            <span>EW Lane Arrival Rate</span>
+                            <span id="rate-ew-label">0.10 v/s</span>
+                        </span>
+                        <input type="range" id="slider-rate-ew" min="0.05" max="0.5" step="0.05" value="0.10" oninput="updateRates()">
+                    </div>
+
+                    <!-- Simulator Controls -->
+                    <div class="control-group" style="margin-top: 15px; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 15px;">
+                        <span class="control-label">Simulation SpeedMultiplier: <span id="speed-label">1.0x</span></span>
+                        <input type="range" id="slider-speed" min="1.0" max="10.0" step="1.0" value="1.0" oninput="updateSpeed()">
+                    </div>
+                    
+                    <div class="btn-group" style="grid-template-columns: 1fr 1fr;">
+                        <button id="btn-pause" onclick="togglePause()"><i data-lucide="pause"></i> Pause</button>
+                        <button onclick="resetSimulation()"><i data-lucide="rotate-ccw"></i> Reset</button>
+                    </div>
+                </div>
+
+                <!-- Real-time Plotting Charts -->
+                <div class="glass-panel">
+                    <div class="section-title">
+                        <i data-lucide="trending-up" style="color: var(--accent-green);"></i>
+                        <span>Live Traffic Analytics & Performance Metrics</span>
+                    </div>
+                    <div class="charts-container">
+                        <div>
+                            <div style="font-size: 0.85rem; color: var(--text-secondary); text-align: center; margin-bottom: 5px;">Queue Sizes Over Time</div>
+                            <div class="chart-box">
+                                <canvas id="chart-queues"></canvas>
+                            </div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.85rem; color: var(--text-secondary); text-align: center; margin-bottom: 5px;">Avg Delay Per Vehicle</div>
+                            <div class="chart-box">
+                                <canvas id="chart-delay"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Side-by-Side Algorithm Comparison -->
+                <div class="glass-panel">
+                    <div class="section-title">
+                        <i data-lucide="bar-chart-3" style="color: var(--accent-purple);"></i>
+                        <span>Algorithm Comparison (200-Step Scenario)</span>
+                    </div>
+                    
+                    <button style="width: 100%;" onclick="runComparison()"><i data-lucide="play-circle"></i> Run Comparative Performance Evaluation</button>
+                    
+                    <div class="compare-grid" id="compare-container">
+                        <div class="compare-card">
+                            <div class="compare-title">Fixed-Time</div>
+                            <div class="compare-val" id="comp-fixed-delay">-</div>
+                            <div class="compare-sub" id="comp-fixed-thr">Throughput: -</div>
+                        </div>
+                        <div class="compare-card">
+                            <div class="compare-title">Actuated</div>
+                            <div class="compare-val" id="comp-actuated-delay">-</div>
+                            <div class="compare-sub" id="comp-actuated-thr">Throughput: -</div>
+                        </div>
+                        <div class="compare-card winner" id="adaptive-comp-card">
+                            <div class="winner-badge">Optimal</div>
+                            <div class="compare-title">Adaptive AI</div>
+                            <div class="compare-val" id="comp-adaptive-delay" style="color: var(--accent-green);">-</div>
+                            <div class="compare-sub" id="comp-adaptive-thr">Throughput: -</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        // Icons setup
+        lucide.createIcons();
+
+        // Chart.js Instances
+        let chartQueues = null;
+        let chartDelay = null;
+
+        // Variables
+        let activeAlgo = "Fixed-Time";
+        let isPaused = false;
+        let chartLimit = 30; // display points
+
+        function initCharts() {
+            const ctxQueues = document.getElementById('chart-queues').getContext('2d');
+            chartQueues = new Chart(ctxQueues, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'NS Lanes',
+                            borderColor: '#3b82f6',
+                            borderWidth: 2,
+                            data: [],
+                            fill: false,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'EW Lanes',
+                            borderColor: '#8b5cf6',
+                            borderWidth: 2,
+                            data: [],
+                            fill: false,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { display: false },
+                        y: { 
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#94a3b8' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: true, labels: { color: '#f8fafc', font: { size: 10 } } }
+                    }
+                }
+            });
+
+            const ctxDelay = document.getElementById('chart-delay').getContext('2d');
+            chartDelay = new Chart(ctxDelay, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'Avg Delay (s)',
+                            borderColor: '#10b981',
+                            borderWidth: 2,
+                            data: [],
+                            fill: true,
+                            backgroundColor: 'rgba(16, 185, 129, 0.05)',
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { display: false },
+                        y: { 
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#94a3b8' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        // SSE connection for real-time updates
+        function connectSSE() {
+            const eventSource = new EventSource("/simulation_stream");
+            
+            eventSource.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                updateUI(data);
+            };
+
+            eventSource.onerror = function() {
+                console.error("SSE connection lost. Reconnecting in 3s...");
+                setTimeout(connectSSE, 3000);
+            };
+        }
+
+        function updateUI(data) {
+            // Update Stats
+            document.getElementById("sim-time-val").innerText = data.time_elapsed + "s";
+            document.getElementById("sim-throughput-val").innerText = data.throughput;
+            document.getElementById("sim-delay-val").innerText = data.total_delay;
+            document.getElementById("sim-avg-delay-val").innerText = data.avg_delay + "s";
+
+            // Update YOLO Counts
+            if (data.video_counts) {
+                const curr = data.video_counts.current;
+                document.getElementById("yolo-left-val").innerText = curr.left_lane !== undefined ? curr.left_lane : 0;
+                document.getElementById("yolo-right-val").innerText = curr.right_lane !== undefined ? curr.right_lane : 0;
+            }
+
+            // Update active controller badge
+            const badge = document.getElementById("active-algo-badge").querySelector("span");
+            badge.innerText = data.controller_type;
+
+            // Update SVG Visualizer
+            const phase = data.current_phase;
+            const queues = data.queues;
+
+            // Update queue text in lanes
+            document.getElementById("svg-q-N").textContent = "Q: " + Math.round(queues.N);
+            document.getElementById("svg-q-S").textContent = "Q: " + Math.round(queues.S);
+            document.getElementById("svg-q-E").textContent = "Q: " + Math.round(queues.E);
+            document.getElementById("svg-q-W").textContent = "Q: " + Math.round(queues.W);
+
+            // Reset light colors
+            document.getElementById("light-N").setAttribute("fill", "red");
+            document.getElementById("light-S").setAttribute("fill", "red");
+            document.getElementById("light-E").setAttribute("fill", "red");
+            document.getElementById("light-W").setAttribute("fill", "red");
+
+            if (phase === "NS_GREEN") {
+                document.getElementById("light-N").setAttribute("fill", "green");
+                document.getElementById("light-S").setAttribute("fill", "green");
+            } else if (phase === "NS_YELLOW") {
+                document.getElementById("light-N").setAttribute("fill", "yellow");
+                document.getElementById("light-S").setAttribute("fill", "yellow");
+            } else if (phase === "EW_GREEN") {
+                document.getElementById("light-E").setAttribute("fill", "green");
+                document.getElementById("light-W").setAttribute("fill", "green");
+            } else if (phase === "EW_YELLOW") {
+                document.getElementById("light-E").setAttribute("fill", "yellow");
+                document.getElementById("light-W").setAttribute("fill", "yellow");
+            }
+
+            // Update charts
+            if (chartQueues && chartDelay) {
+                const labels = chartQueues.data.labels;
+                labels.push(data.time_elapsed);
+                
+                const nsQueue = queues.N + queues.S;
+                const ewQueue = queues.E + queues.W;
+                
+                chartQueues.data.datasets[0].data.push(nsQueue);
+                chartQueues.data.datasets[1].data.push(ewQueue);
+                chartDelay.data.datasets[0].data.push(data.avg_delay);
+
+                // limit data points
+                if (labels.length > chartLimit) {
+                    labels.shift();
+                    chartQueues.data.datasets[0].data.shift();
+                    chartQueues.data.datasets[1].data.shift();
+                    chartDelay.data.datasets[0].data.shift();
+                }
+
+                chartQueues.update('none'); // silent update
+                chartDelay.update('none');
+            }
+        }
+
+        // Button action functions
+        function setAlgorithm(algo) {
+            activeAlgo = algo;
+            // Update active state in buttons
+            document.getElementById("btn-fixed").className = algo === "Fixed-Time" ? "active" : "";
+            document.getElementById("btn-actuated").className = algo === "Actuated" ? "active" : "";
+            document.getElementById("btn-adaptive").className = algo === "Adaptive" ? "active" : "";
+            
+            sendConfig();
+        }
+
+        function updateRates() {
+            const nsVal = parseFloat(document.getElementById("slider-rate-ns").value);
+            const ewVal = parseFloat(document.getElementById("slider-rate-ew").value);
+            
+            document.getElementById("rate-ns-label").innerText = nsVal.toFixed(2) + " v/s";
+            document.getElementById("rate-ew-label").innerText = ewVal.toFixed(2) + " v/s";
+            
+            sendConfig();
+        }
+
+        function updateSpeed() {
+            const speed = parseFloat(document.getElementById("slider-speed").value);
+            document.getElementById("speed-label").innerText = speed.toFixed(1) + "x";
+            sendConfig();
+        }
+
+        function sendConfig() {
+            const nsVal = parseFloat(document.getElementById("slider-rate-ns").value);
+            const ewVal = parseFloat(document.getElementById("slider-rate-ew").value);
+            const speed = parseFloat(document.getElementById("slider-speed").value);
+            
+            fetch("/config", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    controller_type: activeAlgo,
+                    arrival_rates: { N: nsVal, S: nsVal, E: ewVal, W: ewVal },
+                    sim_speed: speed
+                })
+            });
+        }
+
+        function togglePause() {
+            const btn = document.getElementById("btn-pause");
+            if (isPaused) {
+                fetch("/control/resume", { method: "POST" });
+                btn.innerHTML = '<i class="lucide-pause"></i> Pause';
+                isPaused = false;
+            } else {
+                fetch("/control/pause", { method: "POST" });
+                btn.innerHTML = '<i class="lucide-play"></i> Resume';
+                isPaused = true;
+            }
+            lucide.createIcons();
+        }
+
+        function resetSimulation() {
+            fetch("/control/reset", { method: "POST" }).then(() => {
+                chartQueues.data.labels = [];
+                chartQueues.data.datasets[0].data = [];
+                chartQueues.data.datasets[1].data = [];
+                
+                chartDelay.data.labels = [];
+                chartDelay.data.datasets[0].data = [];
+                
+                chartQueues.update();
+                chartDelay.update();
+            });
+        }
+
+        function runComparison() {
+            // Put loading indicators
+            document.getElementById("comp-fixed-delay").innerText = "Running...";
+            document.getElementById("comp-actuated-delay").innerText = "Running...";
+            document.getElementById("comp-adaptive-delay").innerText = "Running...";
+            
+            fetch("/compare")
+                .then(res => res.json())
+                .then(data => {
+                    // Update fixed-time
+                    document.getElementById("comp-fixed-delay").innerText = data["Fixed-Time"].avg_delay + "s";
+                    document.getElementById("comp-fixed-thr").innerText = "Throughput: " + Math.round(data["Fixed-Time"].throughput);
+
+                    // Update actuated
+                    document.getElementById("comp-actuated-delay").innerText = data["Actuated"].avg_delay + "s";
+                    document.getElementById("comp-actuated-thr").innerText = "Throughput: " + Math.round(data["Actuated"].throughput);
+
+                    // Update adaptive
+                    document.getElementById("comp-adaptive-delay").innerText = data["Adaptive"].avg_delay + "s";
+                    document.getElementById("comp-adaptive-thr").innerText = "Throughput: " + Math.round(data["Adaptive"].throughput);
+                })
+                .catch(err => {
+                    console.error("Comparison failed:", err);
+                });
+        }
+
+        // Initialize on Load
+        window.onload = function() {
+            initCharts();
+            connectSSE();
+            sendConfig(); // send initial configuration
+            
+            // Check if video feed fails and show fallback
+            const streamImg = document.getElementById("video-stream");
+            streamImg.onerror = function() {
+                streamImg.style.display = "none";
+                document.getElementById("video-fallback").style.display = "flex";
+            };
+        };
+    </script>
+</body>
+</html>
